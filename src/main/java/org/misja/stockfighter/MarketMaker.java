@@ -134,7 +134,7 @@ public class MarketMaker {
         bid.price = quotes.bid.price;
         bid.qty = quotes.bid.qty;
 
-        System.out.println("Placing new quotes, bid: " + bid.price + ", ask: " + ask.price);
+        System.out.println("Placing new quotes, bid: " + bid.price + ", ask: " + ask.price + ", midMarket: " + lastMidMarket + ", position: " + getPosition());
         askStatus = Optional.of(api.placeOrder(ask));
         bidStatus = Optional.of(api.placeOrder(bid));
     }

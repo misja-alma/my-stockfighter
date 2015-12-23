@@ -13,6 +13,7 @@ public class QuotesCalculator {
         int bestAsk = 0;
 
         // TODO we could also evaluate quotes crossing the midmarket. Those could be good when we're reaching the risk limit.
+        //      we of course always want ask > bid, also ask should be > orderBook bid.
         // Evaluate all combo's [minBid .. midMarket> * <midMarket .. maxAsk]
         for (int bid = minBid; bid < midMarket; bid++) {
             for (int ask = maxAsk; ask > midMarket; ask--) {

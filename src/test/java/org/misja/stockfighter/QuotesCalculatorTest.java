@@ -2,9 +2,8 @@ package org.misja.stockfighter;
 
 import org.junit.Test;
 
-import java.util.Optional;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class QuotesCalculatorTest {
 
@@ -14,27 +13,27 @@ public class QuotesCalculatorTest {
     public void calculateFlatQuotesShouldCalculateQuotesForEmptyOrderBookAndFlatPosition() throws Exception {
         OrderBook orderBook = createEmptyOrderBook();
         int position = 0;
-        Optional<Integer> lastMidMarket = Optional.of(10);
-        Quotes quotes = calculator.calculateQuotes(orderBook, position, lastMidMarket);
+        int midMarket = 10;
+        Quotes quotes = calculator.calculateQuotes(orderBook, position, midMarket);
 
         assertNotNull(quotes);
         assertTrue(quotes.bid.price < quotes.ask.price);
-        assertTrue(quotes.bid.price < lastMidMarket.get());
-        assertTrue(quotes.ask.price > lastMidMarket.get());
+        assertTrue(quotes.bid.price < midMarket);
+        assertTrue(quotes.ask.price > midMarket);
         assertTrue(quotes.bid.qty > 0);
         assertTrue(quotes.ask.qty > 0);
-        assertTrue(lastMidMarket.get() - quotes.bid.price == quotes.ask.price - lastMidMarket.get());
+        assertTrue(midMarket - quotes.bid.price == quotes.ask.price - midMarket);
     }
 
     @Test
     public void calculateSellQuotesShouldCalculateQuotesForEmptyOrderBookAndPositivePosition() throws Exception {
         OrderBook orderBook = createEmptyOrderBook();
         int position = 900;
-        Optional<Integer> lastMidMarket = Optional.of(10);
-        Quotes quotes = calculator.calculateQuotes(orderBook, position, lastMidMarket);
+        int midMarket = 10;
+        Quotes quotes = calculator.calculateQuotes(orderBook, position, midMarket);
 
         assertNotNull(quotes);
-        assertTrue(lastMidMarket.get() - quotes.bid.price > quotes.ask.price - lastMidMarket.get());
+        assertTrue(midMarket - quotes.bid.price > quotes.ask.price - midMarket);
     }
 
     private OrderBook createEmptyOrderBook() {

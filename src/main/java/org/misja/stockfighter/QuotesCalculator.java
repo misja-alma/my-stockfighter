@@ -3,19 +3,16 @@ package org.misja.stockfighter;
 import java.util.Optional;
 
 public class QuotesCalculator {
-    private static final int DEFAULT_MIDMARKET = 42;
-    private static final double DEFAULT_MIDMARKET_DISTANCE_PCT = 3;
     private static final int SPREAD_QTY = 50;
 
-    public Quotes calculateQuotes(OrderBook orderBook, int position, Optional<Integer> lastMidMarket) {
-        int midMarket = Tools.getMidMarket(orderBook).orElseGet(() -> virtualMidMarket(orderBook, lastMidMarket));
-
+    public Quotes calculateQuotes(OrderBook orderBook, int position, int midMarket) {
         int minBid = Math.min(midMarket - 2, (int) (midMarket * 0.95));
         int maxAsk = Math.max(midMarket + 2, (int) (midMarket * 1.05));
         Optional<Double> bestValue = Optional.empty();
         int bestBid = 0;
         int bestAsk = 0;
 
+        // TODO we could also evaluate quotes crossing the midmarket. Those could be good when we're reaching the risk limit.
         // Evaluate all combo's [minBid .. midMarket> * <midMarket .. maxAsk]
         for (int bid = minBid; bid < midMarket; bid++) {
             for (int ask = maxAsk; ask > midMarket; ask--) {
@@ -95,21 +92,4 @@ public class QuotesCalculator {
         if (orderBook.asks != null && orderBook.asks.length > 0 && orderBook.asks[0].price <= ask) return 0;
         return 1 - (((double) (Math.max(0, ask - midMarket))) / midMarket);
     }
-
-    // if no midmarket present, take the last one and adjust if needed. If there's also no last one, just take some number.
-    private int virtualMidMarket(OrderBook orderBook, Optional<Integer> lastMidMarket) {
-        int target = lastMidMarket.orElse(DEFAULT_MIDMARKET);
-        if (orderBook.asks != null && orderBook.asks.length > 0) {
-            // adjust target downwards if needed
-            int ask = orderBook.asks[0].price;
-            return Math.min(target, (int) Math.round(ask - (DEFAULT_MIDMARKET_DISTANCE_PCT / 100) * ask));
-        } else if (orderBook.bids != null && orderBook.bids.length > 0) {
-            // adjust target upwards if needed
-            int bid = orderBook.bids[0].price;
-            return Math.max(target, (int) Math.round(bid + (DEFAULT_MIDMARKET_DISTANCE_PCT / 100) * bid));
-        } else {
-            return target;
-        }
-    }
-
 }

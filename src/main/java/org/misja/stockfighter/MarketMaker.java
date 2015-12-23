@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Optional;
 
 public class MarketMaker {
+    private static final int DEFAULT_MIDMARKET = 42;
+    private static final double DEFAULT_MIDMARKET_DISTANCE_PCT = 3;
+
     private Api api = new Api();
     private QuotesCalculator quotesCalculator = new QuotesCalculator();
     private int position;
@@ -67,11 +70,28 @@ public class MarketMaker {
         while (!canceled) {
             OrderBook orderBook = api.getOrderBook(venue, symbol);
             // TODO here we could also hit
-            Quotes quotes = quotesCalculator.calculateQuotes(orderBook, getPosition(), lastMidMarket);
+            lastMidMarket = Optional.of(Tools.getMidMarket(orderBook).orElseGet(() -> virtualMidMarket(orderBook, lastMidMarket)));
+            Quotes quotes = quotesCalculator.calculateQuotes(orderBook, getPosition(), lastMidMarket.get());
             placeQuotes(quotes);
             waitForFill();
             // TODO here we could also hit
             cancelCurrentQuotes(); // TODO we could better to it after calculating the new quotes. Maybe it's not needed.
+        }
+    }
+
+    // if no midmarket present, take the last one and adjust if needed. If there's also no last one, just take some number.
+    private int virtualMidMarket(OrderBook orderBook, Optional<Integer> lastMidMarket) {
+        int target = lastMidMarket.orElse(DEFAULT_MIDMARKET);
+        if (orderBook.asks != null && orderBook.asks.length > 0) {
+            // adjust target downwards if needed
+            int ask = orderBook.asks[0].price;
+            return Math.min(target, (int) Math.round(ask - (DEFAULT_MIDMARKET_DISTANCE_PCT / 100) * ask));
+        } else if (orderBook.bids != null && orderBook.bids.length > 0) {
+            // adjust target upwards if needed
+            int bid = orderBook.bids[0].price;
+            return Math.max(target, (int) Math.round(bid + (DEFAULT_MIDMARKET_DISTANCE_PCT / 100) * bid));
+        } else {
+            return target;
         }
     }
 
@@ -114,6 +134,7 @@ public class MarketMaker {
         bid.price = quotes.bid.price;
         bid.qty = quotes.bid.qty;
 
+        System.out.println("Placing new quotes, bid: " + bid.price + ", ask: " + ask.price);
         askStatus = Optional.of(api.placeOrder(ask));
         bidStatus = Optional.of(api.placeOrder(bid));
     }

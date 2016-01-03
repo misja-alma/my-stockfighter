@@ -66,11 +66,12 @@ public class MarketMaker {
         // orders which were filled at the last moment or just against mistakes on the exchange side.
         // This loop just adjusts our position. Maybe it's best to define our position dynamically, from a list of
         // order fills?
+        // TODO we could also check trades from other parties because they might affect the midmarket.
 
         while (!canceled) {
             OrderBook orderBook = api.getOrderBook(venue, symbol);
             // TODO here we could also hit
-            lastMidMarket = Optional.of(Tools.getMidMarket(orderBook).orElseGet(() -> virtualMidMarket(orderBook, lastMidMarket)));
+            lastMidMarket = Optional.of(OrderBookUtils.getMidMarket(orderBook).orElseGet(() -> virtualMidMarket(orderBook, lastMidMarket)));
             Quotes quotes = quotesCalculator.calculateQuotes(orderBook, getPosition(), lastMidMarket.get());
             placeQuotes(quotes);
             waitForFill();
@@ -109,8 +110,8 @@ public class MarketMaker {
         if (askStatus.isPresent() && askStatus.get().open) {
             askStatus = Optional.of(api.cancelOrder(venue, symbol, askStatus.get().id));
         }
-        position += bidStatus.isPresent()? bidStatus.get().totalFilled: 0;
-        position -= askStatus.isPresent()? askStatus.get().totalFilled: 0;
+        position += bidStatus.map(s -> s.totalFilled).orElse(0);
+        position -= askStatus.map(s -> s.totalFilled).orElse(0);
         bidStatus = Optional.empty();
         askStatus = Optional.empty();
     }
@@ -134,6 +135,7 @@ public class MarketMaker {
         bid.price = quotes.bid.price;
         bid.qty = quotes.bid.qty;
 
+        // TODO if we keep track of our cash position we could also print out our netvalue against the midmarket.
         System.out.println("Placing new quotes, bid: " + bid.price + ", ask: " + ask.price + ", midMarket: " + lastMidMarket + ", position: " + getPosition());
         askStatus = Optional.of(api.placeOrder(ask));
         bidStatus = Optional.of(api.placeOrder(bid));

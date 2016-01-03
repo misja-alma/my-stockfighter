@@ -61,6 +61,6 @@ public class BlockTrader {
 
     private Optional<Integer> getMidMarket(String venue, String symbol) throws IOException {
         OrderBook orderBook = api.getOrderBook(venue, symbol);
-        return Tools.getMidMarket(orderBook);
+        return OrderBookUtils.getMidMarket(orderBook);
     }
 }
